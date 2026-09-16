@@ -1,6 +1,6 @@
 # ddr5-shellkit
 
-> Read the "identity card" of your DDR5 DIMM — straight from the UEFI shell.
+> Read the ID of your DDR5 DIMM — straight from the UEFI shell.
 
 Every DDR5 module carries a tiny chip called the **SPD5 Hub** that stores its identity card: who made it, how fast it can run, how much memory it holds. `ddr5-shellkit` is a set of UEFI Shell tools that reads that identity card (and the module's other chips — PMIC, temperature sensor, RCD, data buffer) over SMBus, using **only public JEDEC specifications**.
 
@@ -32,7 +32,7 @@ SpdTest.efi read -c <ctrl> -ch <ch> -d <dimm> -x  # also hex-dump raw bytes
 
 Real dump from a SK Hynix `HMCG78AHBVA312N` 16 GB DDR5 **CSODIMM** (a clocked SODIMM, with an on-module CKD clock driver).
 
-**`scan`** — who's on the bus:
+**`scan`** — who's on the dimm:
 
 ```
 ===== SPD5 Hub Scan (addresses 0x50..0x57) =====
@@ -127,8 +127,8 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-## 中文说明（简短）
+## 中文说明
 
-`ddr5-shellkit` 是一组跑在 **UEFI Shell** 里的 DDR5 内存器件工具：直接通过 SMBus 读内存条上的 SPD5 Hub（以及后续的 PMIC/温度传感器/RCD/数据缓冲），全程只用 **JEDEC 公开规范**，不碰任何厂商 NDA 源码（如 Intel MRC）——即「合规分层」。
+`ddr5-shellkit` 是一组跑在 **UEFI Shell** 里的 DDR5 内存器件工具：直接通过 SMBus 读内存条上的 SPD5 Hub（以及后续的 PMIC/温度传感器/RCD/数据缓冲），全程只用 **JEDEC 公开规范**，不碰任何厂商 NDA 源码。
 
 第一个工具 `SpdTest` 已可用：`scan` 扫描 0x50~0x57 八个标准地址列出在位 DIMM；`read` 读完整 1024 字节 SPD、校验 CRC、打印出模块类型 / 密度 / 最高频率 / 时序 / 厂商 / 料号。上文的输出样例来自一根真实的 SK Hynix 16 GB DDR5 CSODIMM。
