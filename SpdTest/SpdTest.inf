@@ -1,0 +1,36 @@
+#*******************************************************************************************
+#                                   SpdTest.inf
+#   Project Code: UEFI
+#   Module Name : SpdTest
+#   Description : Spd Test Shell Application INF
+#*******************************************************************************************/
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SpdTest
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  FILE_GUID                      = B3F2E1D0-8479-6432-C50A-8675F9AC1D3E
+  ENTRY_POINT                    = SpdTestEntry
+
+[Sources]
+  SpdTest.c
+  SpdTest.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  PrintLib
+  DebugLib
+
+[Protocols]
+  gEfiShellParametersProtocolGuid    ## CONSUMES
+  gEfiSmbusHcProtocolGuid            ## CONSUMES (SPD R/W via SmbusDxe)
+
+[Guids]
