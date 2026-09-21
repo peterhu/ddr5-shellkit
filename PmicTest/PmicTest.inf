@@ -1,0 +1,36 @@
+#*******************************************************************************************
+#                                   PmicTest.inf
+#   Project Code: UEFI
+#   Module Name : PmicTest
+#   Description : Pmic Test Shell Application INF
+#*******************************************************************************************/
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = PmicTest
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  FILE_GUID                      = 9C4E7A2B-6D1F-43B8-9E5A-2D8F1C7B4A30
+  ENTRY_POINT                    = PmicTestEntry
+
+[Sources]
+  PmicTest.c
+  PmicTest.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  PrintLib
+  DebugLib
+
+[Protocols]
+  gEfiShellParametersProtocolGuid    ## CONSUMES
+  gEfiSmbusHcProtocolGuid            ## CONSUMES (Smbus R/W via SmbusDxe)
+
+[Guids]

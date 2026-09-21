@@ -274,7 +274,7 @@ SmbusReadByte (
 }
 
 /**
-  Probe an SPD5 Hub (MR0 == 0x51) at an 8-bit SMBus address (JESD300-5B.01 §2.6.1).
+  Probe an SPD5 Hub (MR0 == 0x51) at an 8-bit SMBus address (JESD300-5B.01 sec 2.6.1).
 **/
 STATIC
 BOOLEAN
@@ -629,6 +629,13 @@ PrimaryBusWidthBits (
 
   Reads a 16-bit ps value from two SPD bytes and prints a timing line.
 **/
+
+STATIC
+UINT32
+GetDensityGB (
+  IN CONST UINT8  *Spd
+  );
+
 STATIC
 VOID
 SpdParse (
@@ -668,7 +675,7 @@ SpdParse (
   Trp       = (UINT16)(Spd[SPD_BYTE_TRP_LSB]       | (Spd[SPD_BYTE_TRP_MSB]       << 8));
   Tras      = (UINT16)(Spd[SPD_BYTE_TRAS_LSB]      | (Spd[SPD_BYTE_TRAS_MSB]      << 8));
 
-  // JEP106 (JESD400-5B §512~513): first byte = continuation (high), second = code (low).
+  // JEP106 (JESD400-5B sec 512~513): first byte = continuation (high), second = code (low).
   // Read big-endian.
   MfgId     = (UINT16)((Spd[SPD_BYTE_MFG_ID_LSB]    << 8) | Spd[SPD_BYTE_MFG_ID_MSB]);
   DramMfgId = (UINT16)((Spd[SPD_BYTE_DRAM_MFG_LSB]  << 8) | Spd[SPD_BYTE_DRAM_MFG_MSB]);
