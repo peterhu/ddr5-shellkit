@@ -13,7 +13,7 @@ Every DDR5 module carries a tiny chip called the **SPD5 Hub** that stores its id
 | [SpdTest](SpdTest/) | SPD parser | JESD400-5B + JESD300-5B.01 | ✅ done |
 | [PmicTest](PmicTest/) | PMIC (read + burn) | JESD301-1A.02 + JESD300-5B.01 | ✅ done |
 | TempMonitor | Temperature sensor | JESD302-1 | planned |
-| RcdTool | Registering clock driver | JESD82-513 | planned |
+| [RCDTest](RCDTest/) | Registering clock driver (control words) | JESD82-513 | ✅ done (untested on HW) |
 | DbTool | Data buffer | JESD82 | planned |
 
 ## SpdTest — DDR5 SPD parser
@@ -132,6 +132,45 @@ Spot the gotcha: the three rails all read `0x78`, yet decode to 1.1V / 1.1V / 1.
 
 **Vendor region** — `read` unlocks with the default password, reads R40~R6F, and re-locks. `burn` writes 16 bytes to one block (R40~R4F / R50~R5F / R60~R6F), issues the burn command (R39 = `0x81`/`0x82`/`0x85`), polls R39 for `0x5A`, and re-locks.
 
+## RCDTest — DDR5 RCD control word read / write tool
+
+Reads and writes the **RCD** (Registering Clock Driver) control words over SMBus. The RCD buffers and re-drives the command/address (CA) and clock (CK) signals on RDIMM/LRDIMM; its behavior is configured through JEDEC control words (RW00~RWxx). `scan` probes the 8 RCD addresses; `read` reads the control words; `write` writes one DWord.
+
+### Usage
+
+```
+RCDTest.efi scan                                       # probe 0x58~0x5F, list present RCDs
+RCDTest.efi read -c <ctrl> -ch <ch> -d <dimm>          # read all control words RW00~RW5F
+RCDTest.efi read -c <ctrl> -ch <ch> -d <dimm> -r <reg> # read one control word
+RCDTest.efi write -c <ctrl> -ch <ch> -d <dimm> -r <reg> -data <8hex>  # write one control word
+```
+
+### Example output
+
+*(RCDTest targets RDIMM/LRDIMM — there is no RCD on UDIMM/SODIMM and no server at hand, so this is the expected shape.)*
+
+```
+===== RCD Scan (addresses 0x58..0x5F) =====
+  DIMM 0 (0x58): RCD present (RW00=0xXXXXXXXX)
+  Total: 1 RCD(s) present
+=====================================
+
+===== RCD Control Words (RW00~RW5F) =====
+  DIMM: Controller=0 Channel=0 Dimm=0  (SMBus 0xB0, 7-bit 0x58)
+  RW00 = 0xXXXXXXXX  (Global Features)
+  RW05 = 0xXXXXXXXX  (DIMM Operating Speed)
+  ...
+==========================================
+```
+
+The RCD's revision lives in the paged control word **PG[3]RW6E (Vendor Revision ID)** — write RW5F to select page 3, then read RW6E. Real values seen in a server log: **IDT = Rev 1.0x33, Montage = Rev 2.0x11**.
+
+### How it works
+
+**Addressing** — the RCD sits behind the SPD5 Hub on the DIMM's local bus. Its 7-bit address is `1011 HID[2:0]` = `0x58..0x5F` (JESD300-5B.01 Table 5); 8-bit SMBus form = `0xB0 + slot*2`.
+
+**Control words** — the RCD uses a *sideband control word* protocol (JESD82-513 §7.5.7/7.5.8), not plain register reads: block-write the setup (Sideband command + Reserved + SubChannel + Page + Register), then block-read back Status + a DWord (MSB first). The command byte is `0xC2` (Read DWord) / `0xCE` (Write DWord) in I2C mode; I3C mode ignores the low 2 bits and uses `0xC0`/`0xCC`. The control word space is RW00~RW5F direct (96 registers) plus RW60~RW7F paged via RW5F.
+
 ## How it works
 
 **SPD5 Hub addressing** — each DDR5 DIMM's hub listens on a fixed SMBus 7-bit address `1010 HID[2:0]` = `0x50..0x57` (JESD300-5B.01 Table 2). The 3-bit HID is set by the **HSA pin**: a resistor ladder (10.0K / 15.4K / … / 196K to GND) encodes the 8 values. Tie HSA *directly* to GND and the hub drops into *Offline Mode* (write-protect override) — which is exactly how factory programmers make SPD writable, and why it stays read-only in a running system.
@@ -164,6 +203,7 @@ build -p YourPlatformPkg/YourPlatform.dsc -a X64 -t VS2019 -m ShellPkg/Applicati
 - JESD400-5B — DDR5 SPD Contents (field offsets, module type Table 21, single CRC at 510~511)
 - JESD300-5B.01 — SPD5 Hub (MR11 page select, MR0 device ID 0x51, HSA addressing, local-device addressing Table 5)
 - JESD301-1A.02 — DDR5 PMIC (vendor region R40~R6F, password 0x9473, burn flow §3.3.3, voltage setting Tables 156/160/162)
+- JESD82-513 — DDR5 RCD (sideband control word read/write §7.5.7/7.5.8, command byte §7.5.3, control word space §8, DID 0x0053)
 - SMBus Specification / `EFI_SMBUS_HC_PROTOCOL` (UEFI PI)
 
 ## License
@@ -179,3 +219,5 @@ MIT — see [LICENSE](LICENSE).
 第一个工具 `SpdTest` 已可用：`scan` 扫描 0x50~0x57 八个标准地址列出在位 DIMM；`read` 读完整 1024 字节 SPD、校验 CRC、打印出模块类型 / 密度 / 最高频率 / 时序 / 厂商 / 料号。上文的输出样例来自一根真实的 SK Hynix 16 GB DDR5 CSODIMM。
 
 第二个工具 `PmicTest` 也已可用：`scan` 扫 0x48~0x4F 列出在位的 PMIC；`read` 解锁读回 R40~R6F，并解码 VDD / VDDQ / VPP 三路电压（注意 VPP 的电压基准是 1500mV，与 VDD/VDDQ 的 800mV 不同）。
+
+第三个工具 `RCDTest` 也已写完：`scan` 扫 0x58~0x5F 列出在位的 RCD（RDIMM/LRDIMM 才有）；`read` / `write` 读写 RCD 的控制字（RW00~RWxx，Sideband 控制字协议）。因手头无 RDIMM、无服务器，尚未实机验证。

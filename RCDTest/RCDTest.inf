@@ -1,0 +1,36 @@
+#*******************************************************************************************
+#                                   RCDTest.inf
+#   Project Code: UEFI
+#   Module Name : RCDTest
+#   Description : RCD Test Shell Application INF
+#*******************************************************************************************/
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = RCDTest
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  FILE_GUID                      = A3B1F8E4-7C2D-4A90-B5E6-1D9C3F7A2B80
+  ENTRY_POINT                    = RCDTestEntry
+
+[Sources]
+  RCDTest.c
+  RCDTest.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  PrintLib
+  DebugLib
+
+[Protocols]
+  gEfiShellParametersProtocolGuid    ## CONSUMES
+  gEfiSmbusHcProtocolGuid            ## CONSUMES (Smbus R/W via SmbusDxe)
+
+[Guids]
